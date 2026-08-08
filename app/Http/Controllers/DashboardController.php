@@ -13,17 +13,15 @@ class DashboardController extends Controller
     {
         $userId = auth()->id();
 
-        // Total Penjualan Hari Ini (hanya milik user login)
-        $penjualanHariIni = Transaction::where('user_id', $userId)
+        // Variabel disesuaikan dengan yang diminta dashboard.blade.php
+        $todaySales = Transaction::where('user_id', $userId)
             ->whereDate('created_at', Carbon::today())
             ->sum('total_price');
 
-        // Total Jenis Produk (hanya milik user login)
-        $totalProduk = Product::where('user_id', $userId)->count();
+        $totalProducts = Product::where('user_id', $userId)->count();
 
-        // Total Transaksi Selesai (hanya milik user login)
-        $totalTransaksi = Transaction::where('user_id', $userId)->count();
+        $completedTransactions = Transaction::where('user_id', $userId)->count();
 
-        return view('dashboard', compact('penjualanHariIni', 'totalProduk', 'totalTransaksi'));
+        return view('dashboard', compact('todaySales', 'totalProducts', 'completedTransactions'));
     }
 }
