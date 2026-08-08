@@ -30,6 +30,12 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
     }
 
+    public function show(Category $category)
+    {
+        $category->load('products');
+        return view('categories.show', compact('category'));
+    }
+
     public function edit(Category $category)
     {
         return view('categories.edit', compact('category'));
