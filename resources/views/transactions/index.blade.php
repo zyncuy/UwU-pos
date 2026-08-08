@@ -1,176 +1,122 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Kasir Multi-Item') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+@section('content')
+<div class="container mx-auto p-6">
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold mb-4">Transaksi Kasir</h2>
 
-            @if(session('success'))
-                <div style="background-color: #d1e7dd; color: #0f5132; padding: 15px; border-radius: 6px; font-weight: bold;">
-                    {{ session('success') }}
-                </div>
-            @endif
+        {{-- Form Transaksi --}}
+        <form action="{{ route('transactions.store') }}" method="POST">
+            @csrf
 
-            @if(session('error'))
-                <div style="background-color: #f8d7da; color: #842029; padding: 15px; border-radius: 6px; font-weight: bold;">
-                    {{ session('error') }}
-                </div>
-            @endif
+            <div id="product-list" class="space-y-3 mb-4">
+                {{-- Baris Produk Pertama --}}
+                <div class="product-row" style="display: flex; gap: 10px; align-items: center;">
+                    <select name="product_ids[]" class="product-select" required style="flex: 2; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
+                        <option value="" data-price="0">-- Pilih Produk --</option>
+                        @foreach($products as $product)
+                            <option value="{{ $product->id }}" data-price="{{ $product->price }}">
+                                {{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})
+                            </option>
+                        @endforeach
+                    </select>
 
-            <!-- Form Transaksi -->
-            <div class="p-6 bg-white shadow sm:rounded-lg">
-                <h3 class="text-lg font-bold mb-4">Pilih Barang Belanjaan</h3>
-                
-                <form action="{{ route('transactions.store') }}" method="POST">
-                    @csrf
+                    <input type="number" name="quantities[]" value="1" min="1" class="qty-input" required placeholder="Qty" style="width: 80px; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
                     
-                    <div id="product-list" class="space-y-3 mb-4">
-                        <!-- Baris Produk Pertama -->
-                        <div class="product-row" style="display: flex; gap: 10px; align-items: center;">
-                            <select name="product_ids[]" class="product-select" required style="flex: 2; border: 1px solid #ccc; padding: 8px; border-radius: 4px;" onchange="calculateTotal()">
-                                <option value="" data-price="0">-- Pilih Produk --</option>
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}" data-price="{{ $product->price }}">
-                                        {{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            <input type="number" name="quantities[]" value="1" min="1" class="qty-input" required placeholder="Qty" style="width: 80px; border: 1px solid #ccc; padding: 8px; border-radius: 4px;" oninput="calculateTotal()">
-
-                            <button type="button" onclick="removeRow(this)" style="background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">X</button>
-                        </div>
-                    </div>
-
-                    <button type="button" onclick="addRow()" style="background-color: #0d6efd; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 20px;">
-                        + Tambah Produk Lain
-                    </button>
-
-                    <hr style="margin-bottom: 20px;">
-
-                    <div style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Total Belanja (Rp)</label>
-                            <input type="text" id="total_display" value="Rp 0" readonly style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px; background-color: #f0f0f0; font-weight: bold; font-size: 16px;">
-                        </div>
-
-                        <div style="flex: 1;">
-                            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Uang Bayar (Rp)</label>
-                            <input type="number" id="pay_amount" name="pay_amount" placeholder="Contoh: 50000" required style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px; font-size: 16px;" oninput="calculateTotal()">
-                        </div>
-                    </div>
-
-                    <div style="background-color: #e2e3e5; padding: 12px; border-radius: 4px; text-align: right; font-size: 18px; margin-bottom: 15px;">
-                        Kembalian: <strong id="change_display" style="color: #0d6efd;">Rp 0</strong>
-                    </div>
-
-                    <button type="submit" style="background-color: #198754; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px;">
-                        Proses & Simpan Transaksi
-                    </button>
-                </form>
+                    <button type="button" onclick="removeRow(this)" style="background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">X</button>
+                </div>
             </div>
 
-            <!-- Riwayat Transaksi -->
-            <div class="p-6 bg-white shadow sm:rounded-lg">
-                <h3 class="text-lg font-bold mb-4">Riwayat Transaksi Terakhir</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #ddd; background-color: #f8f9fa; text-align: left;">
-                            <th style="padding: 10px;">No</th>
-                            <th style="padding: 10px;">Tanggal</th>
-                            <th style="padding: 10px;">Item Dibeli</th>
-                            <th style="padding: 10px;">Total</th>
-                            <th style="padding: 10px;">Bayar</th>
-                            <th style="padding: 10px;">Kembalian</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($transactions as $index => $trx)
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 10px;">{{ $index + 1 }}</td>
-                                <td style="padding: 10px;">{{ $trx->created_at->format('d/m/Y H:i') }}</td>
-                                <td style="padding: 10px;">
-                                    <ul style="list-style-type: disc; padding-left: 15px;">
-                                        @foreach($trx->details as $detail)
-                                            <li>{{ $detail->product->name ?? 'Produk Dihapus' }} (x{{ $detail->quantity }})</li>
-                                        @endforeach
-                                    </ul>
-                                </td>
-                                <td style="padding: 10px; font-weight: bold;">Rp {{ number_format($trx->total_price, 0, ',', '.') }}</td>
-                                <td style="padding: 10px;">Rp {{ number_format($trx->pay_amount ?? 0, 0, ',', '.') }}</td>
-                                <td style="padding: 10px; color: green; font-weight: bold;">Rp {{ number_format($trx->change_amount ?? 0, 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="padding: 15px; text-align: center; color: #888;">Belum ada transaksi.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <button type="button" id="add-product-btn" style="background-color: #0d6efd; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-bottom: 20px; cursor: pointer;">+ Tambah Produk Lain</button>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label class="block font-medium">Total Belanja (Rp)</label>
+                    <input type="text" id="total-display" readonly value="Rp 0" style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px; background-color: #e9ecef; font-weight: bold;">
+                </div>
+                <div style="flex: 1;">
+                    <label class="block font-medium">Uang Bayar (Rp)</label>
+                    <input type="number" name="paid_amount" id="paid-amount" required placeholder="Contoh: 50000" style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
+                </div>
             </div>
 
-        </div>
+            <div style="background-color: #e9ecef; padding: 12px; border-radius: 4px; text-align: right; margin-bottom: 15px; font-weight: bold;">
+                Kembalian: <span id="change-display" style="color: #198754;">Rp 0</span>
+            </div>
+
+            <button type="submit" style="width: 100%; background-color: #198754; color: white; border: none; padding: 12px; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;">Proses & Simpan Transaksi</button>
+        </form>
     </div>
 
-    <!-- Script JavaScript Dinamis -->
-    <script>
-        function addRow() {
-            const container = document.getElementById('product-list');
-            const firstRow = container.querySelector('.product-row');
-            const newRow = firstRow.cloneNode(true);
-            
-            // Reset pilihan
-            newRow.querySelector('.product-select').value = '';
-            newRow.querySelector('.qty-input').value = 1;
-            
-            container.appendChild(newRow);
+    {{-- Tabel Riwayat Transaksi --}}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-bold mb-4">Riwayat Transaksi Terakhir</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 8px;">No</th>
+                    <th style="padding: 8px;">Tanggal</th>
+                    <th style="padding: 8px;">Invoice</th>
+                    <th style="padding: 8px;">Total</th>
+                    <th style="padding: 8px;">Bayar</th>
+                    <th style="padding: 8px;">Kembalian</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($transactions as $index => $transaction)
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 8px;">{{ $index + 1 }}</td>
+                        <td style="padding: 8px;">{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
+                        <td style="padding: 8px;">{{ $transaction->invoice_number }}</td>
+                        <td style="padding: 8px;">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+                        <td style="padding: 8px;">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
+                        <td style="padding: 8px;">Rp {{ number_format($transaction->change_amount, 0, ',', '.') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 16px; color: #6c757d;">Belum ada transaksi.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.product-row').forEach(row => {
+            let select = row.querySelector('.product-select');
+            let qty = row.querySelector('.qty-input').value;
+            let price = select.options[select.selectedIndex]?.getAttribute('data-price') || 0;
+            total += (parseFloat(price) * parseInt(qty || 0));
+        });
+
+        document.getElementById('total-display').value = 'Rp ' + total.toLocaleString('id-ID');
+
+        let paid = parseFloat(document.getElementById('paid-amount').value) || 0;
+        let change = paid - total;
+        document.getElementById('change-display').innerText = 'Rp ' + (change >= 0 ? change.toLocaleString('id-ID') : 0);
+    }
+
+    document.addEventListener('change', calculateTotal);
+    document.addEventListener('input', calculateTotal);
+
+    document.getElementById('add-product-btn').addEventListener('click', function() {
+        let firstRow = document.querySelector('.product-row');
+        let newRow = firstRow.cloneNode(true);
+        newRow.querySelector('.qty-input').value = 1;
+        newRow.querySelector('.product-select').selectedIndex = 0;
+        document.getElementById('product-list').appendChild(newRow);
+        calculateTotal();
+    });
+
+    function removeRow(btn) {
+        let rows = document.querySelectorAll('.product-row');
+        if (rows.length > 1) {
+            btn.closest('.product-row').remove();
             calculateTotal();
         }
-
-        function removeRow(button) {
-            const rows = document.querySelectorAll('.product-row');
-            if (rows.length > 1) {
-                button.parentElement.remove();
-                calculateTotal();
-            } else {
-                alert('Minimal harus ada 1 barang!');
-            }
-        }
-
-        function calculateTotal() {
-            let grandTotal = 0;
-            const rows = document.querySelectorAll('.product-row');
-
-            rows.forEach(row => {
-                const select = row.querySelector('.product-select');
-                const qtyInput = row.querySelector('.qty-input');
-                
-                const selectedOption = select.options[select.selectedIndex];
-                const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-                const qty = parseInt(qtyInput.value) || 0;
-
-                grandTotal += (price * qty);
-            });
-
-            const pay = parseFloat(document.getElementById('pay_amount').value) || 0;
-            const change = pay - grandTotal;
-
-            document.getElementById('total_display').value = 'Rp ' + grandTotal.toLocaleString('id-ID');
-            
-            const changeElement = document.getElementById('change_display');
-            if (pay > 0 && change >= 0) {
-                changeElement.innerText = 'Rp ' + change.toLocaleString('id-ID');
-                changeElement.style.color = '#198754';
-            } else if (pay > 0 && change < 0) {
-                changeElement.innerText = 'Uang Kurang!';
-                changeElement.style.color = '#dc3545';
-            } else {
-                changeElement.innerText = 'Rp 0';
-                changeElement.style.color = '#0d6efd';
-            }
-        }
-    </script>
-</x-app-layout>
+    }
+</script>
+@endsection
