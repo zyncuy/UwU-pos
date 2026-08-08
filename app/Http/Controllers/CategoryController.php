@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class CategoryController extends Controller
 {
@@ -25,12 +27,18 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $category = new Category();
-        $category->name = $request->input('name');
-        $category->description = $request->input('description');
-        $category->save();
+        try {
+            DB::table('categories')->insert([
+                'name' => $request->input('name'),
+                'description' => $request->input('description'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menyimpan kategori: ' . $e->getMessage());
+        }
     }
 
     public function show(Category $category)
@@ -51,17 +59,24 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $category->name = $request->input('name');
-        $category->description = $request->input('description');
-        $category->save();
+        try {
+            $category->name = $request->input('name');
+            $category->description = $request->input('description');
+            $category->save();
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memperbarui kategori: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Category $category)
     {
-        $category->delete();
-
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus!');
+        try {
+            $category->delete();
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus!');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus kategori: ' . $e->getMessage());
+        }
     }
 }
