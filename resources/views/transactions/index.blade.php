@@ -16,7 +16,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                <!-- KIRI: Input Barang & Daftar Belanjaan -->
+                <!-- KIRI: Input Produk & Keranjang -->
                 <div class="lg:col-span-2 space-y-6">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <h2 class="text-lg font-bold text-gray-800 mb-4">Transaksi Kasir</h2>
@@ -37,20 +37,20 @@
                                     </select>
                                 </div>
 
-                                <!-- Cari / Pilih Produk -->
+                                <!-- Select Produk -->
                                 <div class="md:col-span-5">
-                                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cari / Pilih Produk</label>
-                                    <input type="hidden" name="product_id" id="selected-product-id" required>
-                                    <input type="text" id="product-search" list="product-options" placeholder="Ketik nama produk..." class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 h-[42px]" autocomplete="off" required>
-                                    
-                                    <datalist id="product-options">
+                                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Pilih Produk</label>
+                                    <select name="product_id" id="product-select" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 h-[42px]" required>
+                                        <option value="">-- Pilih Produk --</option>
                                         @foreach($products as $product)
-                                            <option data-id="{{ $product->id }}" data-category="{{ $product->category_id }}" value="{{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})"></option>
+                                            <option value="{{ $product->id }}" data-category="{{ $product->category_id }}">
+                                                {{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})
+                                            </option>
                                         @endforeach
-                                    </datalist>
+                                    </select>
                                 </div>
 
-                                <!-- Jumlah -->
+                                <!-- QTY & Tambah -->
                                 <div class="md:col-span-3 flex gap-2">
                                     <div class="w-1/2">
                                         <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">QTY</label>
@@ -113,7 +113,7 @@
                     </div>
                 </div>
 
-                <!-- KANAN: Form Pembayaran -->
+                <!-- KANAN: Pembayaran -->
                 <div class="space-y-6">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <h3 class="text-md font-bold text-gray-800 mb-4 border-b pb-2">Pembayaran</h3>
@@ -152,40 +152,25 @@
         </div>
     </div>
 
-    <!-- JavaScript Logika Pencarian & Kembalian -->
+    <!-- Script Filter Kategori & Hitung Kembalian -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const productSearch = document.getElementById('product-search');
-            const hiddenProductId = document.getElementById('selected-product-id');
-            const datalist = document.getElementById('product-options');
             const categoryFilter = document.getElementById('category-filter');
-
-            // Tangkap ID produk saat user memilih/mengisi nama produk
-            productSearch.addEventListener('input', function() {
-                const options = datalist.querySelectorAll('option');
-                let found = false;
-                options.forEach(opt => {
-                    if (opt.value === this.value) {
-                        hiddenProductId.value = opt.getAttribute('data-id');
-                        found = true;
-                    }
-                });
-                if (!found) hiddenProductId.value = '';
-            });
+            const productSelect = document.getElementById('product-select');
+            const productOptions = Array.from(productSelect.options);
 
             // Filter opsi produk berdasarkan kategori
             categoryFilter.addEventListener('change', function() {
                 const selectedCategory = this.value;
-                const options = datalist.querySelectorAll('option');
-                productSearch.value = '';
-                hiddenProductId.value = '';
+                productSelect.value = '';
 
-                options.forEach(opt => {
+                productOptions.forEach(opt => {
+                    if (!opt.value) return; // Lewati option placeholder
                     const categoryId = opt.getAttribute('data-category');
                     if (!selectedCategory || categoryId === selectedCategory) {
-                        opt.disabled = false;
+                        opt.style.display = '';
                     } else {
-                        opt.disabled = true;
+                        opt.style.display = 'none';
                     }
                 });
             });
