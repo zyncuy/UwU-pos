@@ -10,10 +10,14 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        // Hanya menampilkan transaksi milik user yang sedang login
+        // Ambil riwayat transaksi milik user yang login
         $transactions = Transaction::where('user_id', auth()->id())->latest()->get();
 
-        return view('transactions.index', compact('transactions'));
+        // Ambil daftar produk milik user yang login untuk pilihan kasir
+        $products = Product::where('user_id', auth()->id())->get();
+
+        // Kirim $transactions DAN $products ke halaman view
+        return view('transactions.index', compact('transactions', 'products'));
     }
 
     public function store(Request $request)
@@ -25,7 +29,7 @@ class TransactionController extends Controller
         ]);
 
         Transaction::create([
-            'user_id' => auth()->id(), // Menyimpan ID user yang login
+            'user_id' => auth()->id(),
             'invoice_number' => 'INV-' . time(),
             'total_price' => $request->total_price,
             'paid_amount' => $request->paid_amount,
