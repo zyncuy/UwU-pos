@@ -13,15 +13,8 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        try {
-            $transactions = Transaction::with(['user', 'details.product'])->latest()->get();
-            return view('transactions.index', compact('transactions'));
-        } catch (Exception $e) {
-            // Jika view belum ada atau relasi bermasalah
-            return response()->view('transactions.index', [
-                'transactions' => collect([])
-            ]);
-        }
+        $transactions = Transaction::with(['user', 'details.product'])->latest()->get();
+        return view('transactions.index', compact('transactions'));
     }
 
     public function create()
@@ -71,6 +64,20 @@ class TransactionController extends Controller
             return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil disimpan!');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy(Transaction $transaction)
+    {
+        try {
+            DB::transaction(function () use ($transaction) {
+                DB::table('transaction_details')->where('transaction_id', $transaction->id)->delete();
+                $transaction->delete();
+            });
+
+            return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dihapus!');
+        } catch (Exception $e) {
+            return redirect()->route('transactions.index')->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
         }
     }
 }
