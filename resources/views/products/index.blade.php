@@ -83,7 +83,6 @@
                                 <tr>
                                     <td colspan="6" class="text-center py-6 text-gray-400">Belum ada barang yang ditambahkan.</td>
                                 </tr>
-                            @empty
                             @endforelse
                         </tbody>
                     </table>
