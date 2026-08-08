@@ -10,8 +10,9 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with('category')->latest()->get();
-        $categories = Category::all();
+        // Hanya mengambil produk milik user yang sedang login
+        $products = Product::where('user_id', auth()->id())->with('category')->get();
+        $categories = Category::where('user_id', auth()->id())->get();
 
         return view('products.index', compact('products', 'categories'));
     }
@@ -19,36 +20,20 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
-        // Mengambil hanya field barang (mengabaikan _token)
-        Product::create($request->only(['category_id', 'name', 'price', 'stock']));
-
-        return redirect()->route('products.index')->with('success', 'Barang berhasil ditambahkan!');
-    }
-
-    public function update(Request $request, Product $product)
-    {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
+        Product::create([
+            'user_id' => auth()->id(), // Menyimpan ID pengguna yang login
+            'category_id' => $request->category_id,
+            'name' => $request->name,
+            'price' => $request->price,
+            'stock' => $request->stock,
         ]);
 
-        $product->update($request->only(['category_id', 'name', 'price', 'stock']));
-
-        return redirect()->route('products.index')->with('success', 'Barang berhasil diperbarui!');
-    }
-
-    public function destroy(Product $product)
-    {
-        $product->delete();
-
-        return redirect()->route('products.index')->with('success', 'Barang berhasil dihapus!');
+        return redirect()->back()->with('success', 'Produk berhasil ditambahkan!');
     }
 }

@@ -9,11 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
-    $table->id();
-    $table->string('name');
-    $table->text('description')->nullable(); // Pastikan baris ini ada
-    $table->timestamps();
-});
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('name');
+            $table->timestamps();
+        });
     }
 
     public function down(): void

@@ -11,13 +11,14 @@ class Transaction extends Model
 
     protected $fillable = [
         'user_id',
+        'invoice_number',
         'total_price',
-        'pay_amount',
+        'paid_amount',
         'change_amount',
     ];
 
-    public function details()
+    public function user()
     {
-        return $this->hasMany(TransactionDetail::class);
+        return $this->belongsTo(User::class);
     }
 }

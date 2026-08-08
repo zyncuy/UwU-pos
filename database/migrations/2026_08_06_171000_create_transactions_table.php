@@ -10,10 +10,11 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->decimal('total_price', 12, 2);
-            $table->decimal('pay_amount', 12, 2)->nullable();
-            $table->decimal('change_amount', 12, 2)->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('invoice_number')->nullable();
+            $table->integer('total_price');
+            $table->integer('paid_amount');
+            $table->integer('change_amount');
             $table->timestamps();
         });
     }
