@@ -1,118 +1,70 @@
-@extends('layouts.app-pos')
+<x-app-layout>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-@section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="bi bi-tags me-2"></i> Manajemen Kategori</h4>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
-        <i class="bi bi-plus-circle me-1"></i> Tambah Kategori
-    </button>
-</div>
+            @if (session('success'))
+                <div class="p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-r-lg shadow-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                        Manajemen Kategori
+                    </h2>
+                    <a href="{{ route('categories.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition">
+                        + Tambah Kategori
+                    </a>
+                </div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">No</th>
-                        <th>Nama Kategori</th>
-                        <th>Keterangan</th>
-                        <th class="text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($categories as $index => $item)
-                        <tr>
-                            <td class="ps-4">{{ $index + 1 }}</td>
-                            <td class="fw-bold">{{ $item->name }}</td>
-                            <td>{{ $item->description ?? '-' }}</td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#modalEdit{{ $item->id }}">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <form action="{{ route('categories.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-
-                        <!-- Modal Edit -->
-                        <div class="modal fade" id="modalEdit{{ $item->id }}" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form action="{{ route('categories.update', $item->id) }}" method="POST">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Edit Kategori</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                <th class="py-3 px-4 text-center w-16">No</th>
+                                <th class="py-3 px-4">Nama Kategori</th>
+                                <th class="py-3 px-4">Keterangan</th>
+                                <th class="py-3 px-4 text-center w-28">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 text-sm text-gray-700">
+                            @forelse($categories as $index => $category)
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="py-3.5 px-4 text-center font-medium text-gray-500">{{ $index + 1 }}</td>
+                                    <td class="py-3.5 px-4">
+                                        {{-- Link otomatis mengarah ke Master Barang dengan filter kategori --}}
+                                        <a href="{{ route('products.index', ['category_id' => $category->id]) }}" class="text-blue-600 font-bold hover:underline flex items-center gap-1" title="Klik untuk lihat daftar barang">
+                                            {{ $category->name }}
+                                        </a>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-gray-500">{{ $category->description ?? '-' }}</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <div class="flex justify-center items-center gap-2">
+                                            <a href="{{ route('categories.edit', $category->id) }}" class="bg-amber-400 hover:bg-amber-500 text-white p-1.5 rounded-md transition">
+                                                ✏️
+                                            </a>
+                                            <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-md transition">
+                                                    🗑️
+                                                </button>
+                                            </form>
                                         </div>
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label class="form-label">Nama Kategori</label>
-                                                <input type="text" name="name" class="form-control" value="{{ $item->name }}" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Keterangan</label>
-                                                <textarea name="description" class="form-control" rows="3">{{ $item->description }}</textarea>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">Belum ada data kategori.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-6 text-gray-400">Belum ada kategori yang ditambahkan.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
-</div>
-
-<!-- Modal Tambah -->
-<div class="modal fade" id="modalTambah" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('categories.store') }}" method="POST">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">Tambah Kategori Baru</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nama Kategori</label>
-                        <input type="text" name="name" class="form-control" placeholder="Contoh: Makanan, Minuman" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Keterangan</label>
-                        <textarea name="description" class="form-control" rows="3" placeholder="Opsional"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endsection
+</x-app-layout>
