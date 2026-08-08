@@ -11,6 +11,25 @@ use Exception;
 
 class TransactionController extends Controller
 {
+    public function index()
+    {
+        try {
+            $transactions = Transaction::with(['user', 'details.product'])->latest()->get();
+            return view('transactions.index', compact('transactions'));
+        } catch (Exception $e) {
+            // Jika view belum ada atau relasi bermasalah
+            return response()->view('transactions.index', [
+                'transactions' => collect([])
+            ]);
+        }
+    }
+
+    public function create()
+    {
+        $products = Product::where('stock', '>', 0)->get();
+        return view('transactions.create', compact('products'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -22,7 +41,6 @@ class TransactionController extends Controller
             DB::transaction(function () use ($request) {
                 $userId = Auth::id() ?? DB::table('users')->value('id') ?? 1;
 
-                // Simpan data transaksi utama
                 $transaction = Transaction::create([
                     'user_id'       => $userId,
                     'invoice'       => 'TRX-' . time(),
@@ -31,7 +49,6 @@ class TransactionController extends Controller
                     'change_amount' => $request->pay_amount - $request->total_price,
                 ]);
 
-                // Proses pemotongan stok jika ada items
                 if ($request->has('items')) {
                     foreach ($request->items as $item) {
                         $product = Product::find($item['product_id']);
