@@ -9,10 +9,13 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        // Hanya menampilkan kategori milik user yang sedang login
-        $categories = Category::where('user_id', auth()->id())->get();
-
+        $categories = Category::where('user_id', auth()->id())->latest()->get();
         return view('categories.index', compact('categories'));
+    }
+
+    public function create()
+    {
+        return view('categories.create');
     }
 
     public function store(Request $request)
@@ -22,7 +25,6 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Menyimpan data beserta user_id milik pengguna yang login
         Category::create([
             'user_id' => auth()->id(),
             'name' => $request->name,
@@ -30,6 +32,28 @@ class CategoryController extends Controller
         ]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
+    }
+
+    public function show(Category $category)
+    {
+        // Pastikan kategori milik user login
+        if ($category->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Ambil khusus barang milik kategori ini
+        $products = $category->products()->latest()->get();
+
+        return view('categories.show', compact('category', 'products'));
+    }
+
+    public function edit(Category $category)
+    {
+        if ($category->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return view('categories.edit', compact('category'));
     }
 
     public function update(Request $request, Category $category)

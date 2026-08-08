@@ -22,7 +22,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <tr class="bg-gray-100 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 <th class="py-3 px-4 text-center w-16">No</th>
                                 <th class="py-3 px-4">Nama Kategori</th>
                                 <th class="py-3 px-4">Keterangan</th>
@@ -34,21 +34,20 @@
                                 <tr class="hover:bg-gray-50 transition">
                                     <td class="py-3.5 px-4 text-center font-medium text-gray-500">{{ $index + 1 }}</td>
                                     <td class="py-3.5 px-4">
-                                        {{-- Link otomatis mengarah ke Master Barang dengan filter kategori --}}
-                                        <a href="{{ route('products.index', ['category_id' => $category->id]) }}" class="text-blue-600 font-bold hover:underline flex items-center gap-1" title="Klik untuk lihat daftar barang">
+                                        <a href="{{ route('categories.show', $category->id) }}" class="text-blue-600 font-bold hover:underline" title="Klik untuk lihat barang di kategori ini">
                                             {{ $category->name }}
                                         </a>
                                     </td>
                                     <td class="py-3.5 px-4 text-gray-500">{{ $category->description ?? '-' }}</td>
                                     <td class="py-3.5 px-4 text-center">
                                         <div class="flex justify-center items-center gap-2">
-                                            <a href="{{ route('categories.edit', $category->id) }}" class="bg-amber-400 hover:bg-amber-500 text-white p-1.5 rounded-md transition">
+                                            <a href="{{ route('categories.edit', $category->id) }}" class="bg-amber-400 hover:bg-amber-500 text-white p-1.5 rounded-md transition" title="Edit Kategori">
                                                 ✏️
                                             </a>
                                             <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus kategori ini?')" class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-md transition">
+                                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-md transition" title="Hapus Kategori">
                                                     🗑️
                                                 </button>
                                             </form>
