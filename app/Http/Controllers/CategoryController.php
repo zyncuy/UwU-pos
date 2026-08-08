@@ -9,7 +9,9 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        // Hanya menampilkan kategori milik user yang sedang login
+        $categories = Category::where('user_id', auth()->id())->get();
+
         return view('categories.index', compact('categories'));
     }
 
@@ -20,27 +22,43 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // Mengambil hanya field yang dibutuhkan (mengabaikan _token)
-        Category::create($request->only(['name', 'description']));
+        // Menyimpan data beserta user_id milik pengguna yang login
+        Category::create([
+            'user_id' => auth()->id(),
+            'name' => $request->name,
+            'description' => $request->description,
+        ]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
     }
 
     public function update(Request $request, Category $category)
     {
+        if ($category->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        $category->update($request->only(['name', 'description']));
+        $category->update([
+            'name' => $request->name,
+            'description' => $request->description,
+        ]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
     }
 
     public function destroy(Category $category)
     {
+        if ($category->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $category->delete();
+
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus!');
     }
 }
