@@ -26,4 +26,20 @@ class Transaction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    // Helper formatting tanpa butuh ext-intl
+    public function getFormattedTotalPriceAttribute(): string
+    {
+        return 'Rp ' . number_format($this->total_price ?? 0, 0, ',', '.');
+    }
+
+    public function getFormattedPayAmountAttribute(): string
+    {
+        return 'Rp ' . number_format($this->pay_amount ?? 0, 0, ',', '.');
+    }
+
+    public function getFormattedChangeAmountAttribute(): string
+    {
+        return 'Rp ' . number_format($this->change_amount ?? 0, 0, ',', '.');
+    }
 }

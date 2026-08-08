@@ -2,84 +2,102 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
+use App\Models\Category;
 use App\Models\Product;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['user', 'details.product'])->latest()->get();
+        $transactions = Transaction::with(['user', 'items.product'])
+            ->latest()
+            ->paginate(10);
+
         return view('transactions.index', compact('transactions'));
     }
 
-   public function create()
-{
-    $categories = \App\Models\Category::all();
-    $products = \App\Models\Product::all();
+    public function create()
+    {
+        $categories = Category::all();
+        $products = Product::where('stock', '>', 0)->get();
 
-    return view('transactions.create', compact('categories', 'products'));
-}
+        return view('transactions.create', compact('categories', 'products'));
+    }
 
     public function store(Request $request)
     {
         $request->validate([
-            'total_price' => 'required|numeric',
-            'pay_amount' => 'required|numeric|gte:total_price',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'pay_amount' => 'required|numeric|min:0',
         ]);
 
+        DB::beginTransaction();
+
         try {
-            DB::transaction(function () use ($request) {
-                $userId = Auth::id() ?? DB::table('users')->value('id') ?? 1;
+            $totalPrice = 0;
+            $itemsData = [];
 
-                $transaction = Transaction::create([
-                    'user_id'       => $userId,
-                    'invoice'       => 'TRX-' . time(),
-                    'total_price'   => $request->total_price,
-                    'pay_amount'    => $request->pay_amount,
-                    'change_amount' => $request->pay_amount - $request->total_price,
-                ]);
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
 
-                if ($request->has('items')) {
-                    foreach ($request->items as $item) {
-                        $product = Product::find($item['product_id']);
-                        if ($product) {
-                            $product->decrement('stock', $item['quantity']);
-
-                            DB::table('transaction_details')->insert([
-                                'transaction_id' => $transaction->id,
-                                'product_id'     => $product->id,
-                                'quantity'       => $item['quantity'],
-                                'price'          => $product->price,
-                                'created_at'     => now(),
-                                'updated_at'     => now(),
-                            ]);
-                        }
-                    }
+                if ($product->stock < $item['qty']) {
+                    return back()->with('error', "Stok produk {$product->name} tidak mencukupi.");
                 }
-            });
 
-            return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil disimpan!');
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
+                $subtotal = $product->price * $item['qty'];
+                $totalPrice += $subtotal;
+
+                // Kurangi stok produk
+                $product->decrement('stock', $item['qty']);
+
+                $itemsData[] = [
+                    'product_id' => $product->id,
+                    'quantity' => $item['qty'],
+                    'price' => $product->price,
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            if ($request->pay_amount < $totalPrice) {
+                return back()->with('error', 'Jumlah bayar kurang dari total harga.');
+            }
+
+            $changeAmount = $request->pay_amount - $totalPrice;
+            $invoiceNumber = 'TRX-' . time() . rand(100, 999);
+
+            $transaction = Transaction::create([
+                'user_id' => auth()->id() ?? 1,
+                'invoice' => $invoiceNumber,
+                'total_price' => $totalPrice,
+                'pay_amount' => $request->pay_amount,
+                'change_amount' => $changeAmount,
+            ]);
+
+            foreach ($itemsData as $data) {
+                $transaction->items()->create($data);
+            }
+
+            DB::commit();
+
+            return redirect()->route('transactions.show', $transaction->id)
+                ->with('success', 'Transaksi berhasil disimpan!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
         }
     }
 
-    public function destroy(Transaction $transaction)
+    public function show(Transaction $transaction)
     {
-        try {
-            DB::transaction(function () use ($transaction) {
-                DB::table('transaction_details')->where('transaction_id', $transaction->id)->delete();
-                $transaction->delete();
-            });
-
-            return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dihapus!');
-        } catch (Exception $e) {
-            return redirect()->route('transactions.index')->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
-        }
+        $transaction->load(['user', 'items.product']);
+        return view('transactions.show', compact('transaction'));
     }
 }
