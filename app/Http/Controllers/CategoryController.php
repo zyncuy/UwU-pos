@@ -25,7 +25,10 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        Category::create($request->only('name', 'description'));
+        $category = new Category();
+        $category->name = $request->input('name');
+        $category->description = $request->input('description');
+        $category->save();
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan!');
     }
@@ -48,7 +51,9 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $category->update($request->only('name', 'description'));
+        $category->name = $request->input('name');
+        $category->description = $request->input('description');
+        $category->save();
 
         return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
     }
