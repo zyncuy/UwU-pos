@@ -5,24 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $todaySales = Transaction::whereDate('created_at', today())->sum('total_price');
-        $totalProducts = Product::count();
-        $totalTransactions = Transaction::count();
+        $userId = auth()->id();
 
-        $salesData = Transaction::select(
-            DB::raw('DATE(created_at) as date'),
-            DB::raw('SUM(total_price) as total')
-        )
-        ->groupBy('date')
-        ->orderBy('date', 'asc')
-        ->get();
+        // Total Penjualan Hari Ini (hanya milik user login)
+        $penjualanHariIni = Transaction::where('user_id', $userId)
+            ->whereDate('created_at', Carbon::today())
+            ->sum('total_price');
 
-        return view('dashboard', compact('todaySales', 'totalProducts', 'totalTransactions', 'salesData'));
+        // Total Jenis Produk (hanya milik user login)
+        $totalProduk = Product::where('user_id', $userId)->count();
+
+        // Total Transaksi Selesai (hanya milik user login)
+        $totalTransaksi = Transaction::where('user_id', $userId)->count();
+
+        return view('dashboard', compact('penjualanHariIni', 'totalProduk', 'totalTransaksi'));
     }
 }
