@@ -2,58 +2,82 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
 use App\Models\Product;
+use App\Models\Category; // Pastikan import Category ditambahkan
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        // Ambil riwayat transaksi milik user yang login
-        $transactions = Transaction::where('user_id', auth()->id())->latest()->get();
+        $products = Product::where('stock', '>', 0)->get();
+        $categories = Category::all(); // Mengambil data kategori untuk filter
 
-        // Ambil daftar produk milik user yang login
-        $products = Product::where('user_id', auth()->id())->get();
-
-        return view('transactions.index', compact('transactions', 'products'));
+        return view('transactions.index', compact('products', 'categories'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'product_ids' => 'required|array',
-            'product_ids.*' => 'required|exists:products,id',
-            'quantities' => 'required|array',
-            'quantities.*' => 'required|integer|min:1',
-            'paid_amount' => 'required|numeric',
-        ]);
+        // Fitur Tambah Barang ke Keranjang (Cart)
+        if ($request->action === 'add_item') {
+            $product = Product::findOrFail($request->product_id);
+            $cart = session()->get('cart', []);
 
-        // Hitung total belanja secara aman di Backend
-        $totalPrice = 0;
-        foreach ($request->product_ids as $index => $productId) {
-            $product = Product::where('user_id', auth()->id())->find($productId);
-            if ($product) {
-                $qty = $request->quantities[$index] ?? 1;
-                $totalPrice += ($product->price * $qty);
-
-                // Potong stok produk
-                $product->decrement('stock', $qty);
+            if (isset($cart[$product->id])) {
+                $cart[$product->id]['quantity'] += $request->quantity;
+            } else {
+                $cart[$product->id] = [
+                    "name" => $product->name,
+                    "quantity" => $request->quantity,
+                    "price" => $product->price,
+                ];
             }
+
+            session()->put('cart', $cart);
+            return redirect()->back()->with('success', 'Barang berhasil ditambahkan ke keranjang!');
         }
 
-        $paidAmount = $request->paid_amount;
-        $changeAmount = $paidAmount - $totalPrice;
+        // Fitur Selesaikan Transaksi / Checkout
+        if ($request->action === 'checkout') {
+            $cart = session()->get('cart', []);
+            if (empty($cart)) {
+                return redirect()->back()->with('error', 'Keranjang transaksi masih kosong!');
+            }
 
-        // Simpan transaksi
-        Transaction::create([
-            'user_id' => auth()->id(),
-            'invoice_number' => 'INV-' . time(),
-            'total_price' => $totalPrice,
-            'paid_amount' => $paidAmount,
-            'change_amount' => $changeAmount,
-        ]);
+            // Kurangi Stok Produk
+            foreach ($cart as $id => $details) {
+                $product = Product::find($id);
+                if ($product) {
+                    $product->decrement('stock', $details['quantity']);
+                }
+            }
 
-        return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil disimpan!');
+            // Simpan Transaksi
+            Transaction::create([
+                'invoice' => 'TRX-' . time(),
+                'total_price' => $request->total_price,
+                'pay_amount' => $request->pay_amount,
+                'change_amount' => $request->pay_amount - $request->total_price,
+            ]);
+
+            // Kosongkan Keranjang
+            session()->forget('cart');
+
+            return redirect()->back()->with('success', 'Transaksi berhasil diselesaikan!');
+        }
+
+        return redirect()->back();
+    }
+
+    public function destroy($id)
+    {
+        $cart = session()->get('cart', []);
+        if (isset($cart[$id])) {
+            unset($cart[$id]);
+            session()->put('cart', $cart);
+        }
+
+        return redirect()->back()->with('success', 'Barang dihapus dari keranjang!');
     }
 }
