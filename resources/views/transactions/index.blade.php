@@ -1,122 +1,172 @@
 <x-app-layout>
+    <!-- CSS & JS Tom Select untuk Fitur Pencarian Dropdown -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            {{-- Form Transaksi --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                <h2 class="text-xl font-bold mb-4">Transaksi Kasir</h2>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-                <form action="{{ route('transactions.store') }}" method="POST">
-                    @csrf
+            @if (session('success'))
+                <div class="p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-r-lg shadow-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
 
-                    <div id="product-list" class="space-y-3 mb-4">
-                        {{-- Baris Produk Pertama --}}
-                        <div class="product-row" style="display: flex; gap: 10px; align-items: center;">
-                            <select name="product_ids[]" class="product-select" required style="flex: 2; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
-                                <option value="" data-price="0">-- Pilih Produk --</option>
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}" data-price="{{ $product->price }}">
-                                        {{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})
-                                    </option>
-                                @endforeach
-                            </select>
+            @if (session('error'))
+                <div class="p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-r-lg shadow-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
 
-                            <input type="number" name="quantities[]" value="1" min="1" class="qty-input" required placeholder="Qty" style="width: 80px; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- KIRI: Form Input Barang & Keranjang -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Form Pilih Barang (dengan Pencarian) -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">Transaksi Kasir</h2>
+                        
+                        <form action="{{ route('transactions.store') }}" method="POST" id="add-item-form" class="flex gap-3 items-end">
+                            @csrf
+                            <input type="hidden" name="action" value="add_item">
                             
-                            <button type="button" onclick="removeRow(this)" style="background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">X</button>
-                        </div>
+                            <div class="flex-grow">
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cari / Pilih Produk</label>
+                                <select id="product-select" name="product_id" required>
+                                    <option value="">-- Cari Nama Barang --</option>
+                                    @foreach($products as $product)
+                                        <option value="{{ $product->id }}" data-price="{{ $product->price }}" data-stock="{{ $product->stock }}">
+                                            {{ $product->name }} - Rp {{ number_format($product->price, 0, ',', '.') }} (Stok: {{ $product->stock }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="w-24">
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Jumlah</label>
+                                <input type="number" name="quantity" value="1" min="1" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
+
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition">
+                                + Tambah
+                            </button>
+                        </form>
                     </div>
 
-                    <button type="button" id="add-product-btn" style="background-color: #0d6efd; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-bottom: 20px; cursor: pointer;">+ Tambah Produk Lain</button>
-
-                    <div style="display: flex; gap: 20px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label class="block font-medium">Total Belanja (Rp)</label>
-                            <input type="text" id="total-display" readonly value="Rp 0" style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px; background-color: #e9ecef; font-weight: bold;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label class="block font-medium">Uang Bayar (Rp)</label>
-                            <input type="number" name="paid_amount" id="paid-amount" required placeholder="Contoh: 50000" style="width: 100%; border: 1px solid #ccc; padding: 8px; border-radius: 4px;">
+                    <!-- Tabel Item Kasir / Keranjang -->
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-md font-bold text-gray-800 mb-4">Daftar Belanjaan</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase">
+                                        <th class="py-3 px-4">Barang</th>
+                                        <th class="py-3 px-4 text-right">Harga</th>
+                                        <th class="py-3 px-4 text-center">Qty</th>
+                                        <th class="py-3 px-4 text-right">Subtotal</th>
+                                        <th class="py-3 px-4 text-center w-16">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 text-sm">
+                                    @php $grandTotal = 0; @endphp
+                                    @forelse(session('cart', []) as $id => $item)
+                                        @php 
+                                            $subtotal = $item['price'] * $item['quantity'];
+                                            $grandTotal += $subtotal;
+                                        @endphp
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="py-3 px-4 font-semibold text-gray-800">{{ $item['name'] }}</td>
+                                            <td class="py-3 px-4 text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                                            <td class="py-3 px-4 text-center">{{ $item['quantity'] }}</td>
+                                            <td class="py-3 px-4 text-right font-semibold">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                                            <td class="py-3 px-4 text-center">
+                                                <form action="{{ route('transactions.destroy', $id) }}" method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-xs bg-red-50 px-2 py-1 rounded">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center py-8 text-gray-400">Keranjang transaksi masih kosong.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
 
-                    <div style="background-color: #e9ecef; padding: 12px; border-radius: 4px; text-align: right; margin-bottom: 15px; font-weight: bold;">
-                        Kembalian: <span id="change-display" style="color: #198754;">Rp 0</span>
+                <!-- KANAN: Ringkasan & Pembayaran -->
+                <div class="space-y-6">
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <h3 class="text-md font-bold text-gray-800 mb-4 border-b pb-2">Pembayaran</h3>
+
+                        <div class="space-y-3 mb-6">
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Total Belanja:</span>
+                                <span class="text-xl font-bold text-gray-900">Rp {{ number_format($grandTotal, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('transactions.store') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <input type="hidden" name="action" value="checkout">
+                            <input type="hidden" name="total_price" value="{{ $grandTotal }}">
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Uang Diterima (Rp)</label>
+                                <input type="number" id="pay_amount" name="pay_amount" min="{{ $grandTotal }}" placeholder="0" class="w-full border-gray-300 rounded-lg text-lg font-bold text-gray-800 focus:ring-blue-500 focus:border-blue-500" required {{ empty(session('cart')) ? 'disabled' : '' }}>
+                            </div>
+
+                            <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center text-sm">
+                                <span class="text-gray-600 font-medium">Kembalian:</span>
+                                <span id="change_amount" class="text-lg font-bold text-green-600">Rp 0</span>
+                            </div>
+
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition disabled:opacity-50" {{ empty(session('cart')) ? 'disabled' : '' }}>
+                                Selesaikan Transaksi
+                            </button>
+                        </form>
                     </div>
+                </div>
 
-                    <button type="submit" style="width: 100%; background-color: #198754; color: white; border: none; padding: 12px; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;">Proses & Simpan Transaksi</button>
-                </form>
             </div>
 
-            {{-- Tabel Riwayat Transaksi --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-bold mb-4">Riwayat Transaksi Terakhir</h3>
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #dee2e6;">
-                            <th style="padding: 8px;">No</th>
-                            <th style="padding: 8px;">Tanggal</th>
-                            <th style="padding: 8px;">Invoice</th>
-                            <th style="padding: 8px;">Total</th>
-                            <th style="padding: 8px;">Bayar</th>
-                            <th style="padding: 8px;">Kembalian</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($transactions as $index => $transaction)
-                            <tr style="border-bottom: 1px solid #dee2e6;">
-                                <td style="padding: 8px;">{{ $index + 1 }}</td>
-                                <td style="padding: 8px;">{{ $transaction->created_at->format('d/m/Y H:i') }}</td>
-                                <td style="padding: 8px;">{{ $transaction->invoice_number }}</td>
-                                <td style="padding: 8px;">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
-                                <td style="padding: 8px;">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
-                                <td style="padding: 8px;">Rp {{ number_format($transaction->change_amount, 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 16px; color: #6c757d;">Belum ada transaksi.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 
+    <!-- Script Aktivasi Tom Select Searchable Dropdown & Hitung Kembalian -->
     <script>
-        function calculateTotal() {
-            let total = 0;
-            document.querySelectorAll('.product-row').forEach(row => {
-                let select = row.querySelector('.product-select');
-                let qty = row.querySelector('.qty-input').value;
-                let price = select.options[select.selectedIndex]?.getAttribute('data-price') || 0;
-                total += (parseFloat(price) * parseInt(qty || 0));
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aktifkan fitur pencarian pada select barang
+            new TomSelect("#product-select", {
+                create: false,
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                }
             });
 
-            document.getElementById('total-display').value = 'Rp ' + total.toLocaleString('id-ID');
+            // Hitung Kembalian Otomatis
+            const payInput = document.getElementById('pay_amount');
+            const changeOutput = document.getElementById('change_amount');
+            const grandTotal = {{ $grandTotal }};
 
-            let paid = parseFloat(document.getElementById('paid-amount').value) || 0;
-            let change = paid - total;
-            document.getElementById('change-display').innerText = 'Rp ' + (change >= 0 ? change.toLocaleString('id-ID') : 0);
-        }
-
-        document.addEventListener('change', calculateTotal);
-        document.addEventListener('input', calculateTotal);
-
-        document.getElementById('add-product-btn').addEventListener('click', function() {
-            let firstRow = document.querySelector('.product-row');
-            let newRow = firstRow.cloneNode(true);
-            newRow.querySelector('.qty-input').value = 1;
-            newRow.querySelector('.product-select').selectedIndex = 0;
-            document.getElementById('product-list').appendChild(newRow);
-            calculateTotal();
-        });
-
-        function removeRow(btn) {
-            let rows = document.querySelectorAll('.product-row');
-            if (rows.length > 1) {
-                btn.closest('.product-row').remove();
-                calculateTotal();
+            if (payInput) {
+                payInput.addEventListener('input', function() {
+                    const payValue = parseFloat(this.value) || 0;
+                    const change = payValue - grandTotal;
+                    if (change >= 0) {
+                        changeOutput.textContent = 'Rp ' + change.toLocaleString('id-ID');
+                    } else {
+                        changeOutput.textContent = 'Rp 0';
+                    }
+                });
             }
-        }
+        });
     </script>
 </x-app-layout>

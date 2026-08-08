@@ -1,92 +1,93 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Daftar Barang') }}
-        </h2>
-    </x-slot>
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <!-- Alert Success -->
-            @if(session('success'))
-                <div style="background-color: #d1e7dd; color: #0f5132; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            @if (session('success'))
+                <div class="p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-r-lg shadow-sm">
                     {{ session('success') }}
                 </div>
             @endif
 
             <!-- Form Tambah Barang -->
-            <div class="p-6 bg-white shadow sm:rounded-lg">
-                <h3 class="text-lg font-bold mb-4">Tambah Barang Baru</h3>
-                <form action="{{ route('products.store') }}" method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Tambah Barang Baru</h2>
+                <form action="{{ route('products.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     @csrf
                     <div>
-                        <label style="display: block; font-size: 12px; font-weight: bold;">Kategori</label>
-                        <select name="category_id" required style="border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px;">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Kategori</label>
+                        <select name="category_id" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="">-- Pilih Kategori --</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </div>
-
                     <div>
-                        <label style="display: block; font-size: 12px; font-weight: bold;">Nama Barang</label>
-                        <input type="text" name="name" placeholder="Contoh: Es Teh" required style="border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px;">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nama Barang</label>
+                        <input type="text" name="name" placeholder="Contoh: Es Teh" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-
                     <div>
-                        <label style="display: block; font-size: 12px; font-weight: bold;">Harga (Rp)</label>
-                        <input type="number" name="price" placeholder="5000" required style="border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px;">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Harga (Rp)</label>
+                        <input type="number" name="price" placeholder="5000" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-
                     <div>
-                        <label style="display: block; font-size: 12px; font-weight: bold;">Stok</label>
-                        <input type="number" name="stock" placeholder="10" required style="border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; width: 80px;">
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Stok</label>
+                        <input type="number" name="stock" placeholder="10" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-
-                    <button type="submit" style="background-color: #0d6efd; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                        + Simpan Barang
-                    </button>
+                    <div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition">
+                            + Simpan Barang
+                        </button>
+                    </div>
                 </form>
             </div>
 
             <!-- Tabel Daftar Barang -->
-            <div class="p-6 bg-white shadow sm:rounded-lg">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #ddd; background-color: #f8f9fa;">
-                            <th style="padding: 10px;">NO</th>
-                            <th style="padding: 10px;">NAMA BARANG</th>
-                            <th style="padding: 10px;">KATEGORI</th>
-                            <th style="padding: 10px;">HARGA</th>
-                            <th style="padding: 10px;">STOK</th>
-                            <th style="padding: 10px;">AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($products as $index => $product)
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 10px;">{{ $index + 1 }}</td>
-                                <td style="padding: 10px;">{{ $product->name }}</td>
-                                <td style="padding: 10px;">{{ $product->category->name ?? '-' }}</td>
-                                <td style="padding: 10px;">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
-                                <td style="padding: 10px;">{{ $product->stock }}</td>
-                                <td style="padding: 10px;">
-                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Hapus barang ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" style="color: red; background: none; border: none; cursor: pointer; text-decoration: underline;">Hapus</button>
-                                    </form>
-                                </td>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                <th class="py-3 px-4 text-center w-12">NO</th>
+                                <th class="py-3 px-4">NAMA BARANG</th>
+                                <th class="py-3 px-4">KATEGORI</th>
+                                <th class="py-3 px-4">HARGA</th>
+                                <th class="py-3 px-4 text-center">STOK</th>
+                                <th class="py-3 px-4 text-center w-32">AKSI</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="padding: 15px; text-align: center; color: #888;">Belum ada data barang. Silakan isi form di atas.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 text-sm text-gray-700">
+                            @forelse($products as $index => $product)
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="py-3.5 px-4 text-center font-medium text-gray-500">{{ $index + 1 }}</td>
+                                    <td class="py-3.5 px-4 font-semibold text-gray-900">{{ $product->name }}</td>
+                                    <td class="py-3.5 px-4 text-gray-600">{{ $product->category->name ?? '-' }}</td>
+                                    <td class="py-3.5 px-4 font-semibold text-gray-900">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
+                                    <td class="py-3.5 px-4 text-center font-medium">{{ $product->stock }}</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <div class="flex justify-center items-center gap-3">
+                                            <a href="{{ route('products.edit', $product->id) }}" class="text-amber-500 hover:text-amber-700 font-bold text-sm">
+                                                Edit
+                                            </a>
+                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus barang ini?')" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-sm">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-6 text-gray-400">Belum ada barang yang ditambahkan.</td>
+                                </tr>
+                            @empty
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
