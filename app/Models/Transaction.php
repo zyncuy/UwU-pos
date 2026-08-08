@@ -9,8 +9,6 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    protected $table = 'transactions';
-
     protected $fillable = [
         'user_id',
         'invoice',
@@ -19,13 +17,13 @@ class Transaction extends Model
         'change_amount',
     ];
 
+    public function items()
+    {
+        return $this->hasMany(TransactionItem::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function details()
-    {
-        return $this->hasMany(TransactionDetail::class);
     }
 }
