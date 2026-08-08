@@ -17,11 +17,13 @@ class TransactionController extends Controller
         return view('transactions.index', compact('transactions'));
     }
 
-    public function create()
-    {
-        $products = Product::where('stock', '>', 0)->get();
-        return view('transactions.create', compact('products'));
-    }
+   public function create()
+{
+    $categories = \App\Models\Category::all();
+    $products = \App\Models\Product::all();
+
+    return view('transactions.create', compact('categories', 'products'));
+}
 
     public function store(Request $request)
     {
