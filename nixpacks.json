@@ -1,8 +1,0 @@
-﻿{
-  "providers": ["php", "node"],
-  "phases": {
-    "setup": {
-      "nixPkgs": ["php82", "php82Extensions.intl", "composer", "nodejs"]
-    }
-  }
-}
