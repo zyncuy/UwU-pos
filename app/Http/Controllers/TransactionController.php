@@ -8,16 +8,12 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['user', 'items.product'])
-            ->latest()
-            ->paginate(10);
-
+        $transactions = Transaction::with(['user', 'items.product'])->latest()->paginate(10);
         return view('transactions.index', compact('transactions'));
     }
 
@@ -25,7 +21,6 @@ class TransactionController extends Controller
     {
         $categories = Category::all();
         $products = Product::where('stock', '>', 0)->get();
-
         return view('transactions.create', compact('categories', 'products'));
     }
 
@@ -54,7 +49,6 @@ class TransactionController extends Controller
                 $subtotal = $product->price * $item['qty'];
                 $totalPrice += $subtotal;
 
-                // Kurangi stok produk
                 $product->decrement('stock', $item['qty']);
 
                 $itemsData[] = [
