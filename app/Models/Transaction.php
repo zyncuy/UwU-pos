@@ -17,28 +17,20 @@ class Transaction extends Model
         'change_amount',
     ];
 
-    public function items()
-    {
-        return $this->hasMany(TransactionItem::class);
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function getFormattedTotalPriceAttribute(): string
+    // Relasi ke detail transaksi
+    public function details()
     {
-        return 'Rp ' . number_format($this->total_price ?? 0, 0, ',', '.');
+        return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 
-    public function getFormattedPayAmountAttribute(): string
+    // Alias jika kodingan lama memanggil items
+    public function items()
     {
-        return 'Rp ' . number_format($this->pay_amount ?? 0, 0, ',', '.');
-    }
-
-    public function getFormattedChangeAmountAttribute(): string
-    {
-        return 'Rp ' . number_format($this->change_amount ?? 0, 0, ',', '.');
+        return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 }
