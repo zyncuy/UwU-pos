@@ -22,13 +22,11 @@ class Transaction extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Relasi ke detail transaksi
     public function details()
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 
-    // Alias jika kodingan lama memanggil items
     public function items()
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
