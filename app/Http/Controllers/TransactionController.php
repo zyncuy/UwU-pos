@@ -55,11 +55,12 @@ class TransactionController extends Controller
                 // Kurangi stok produk
                 $product->decrement('stock', $item['qty']);
 
+                // Data untuk tabel transaction_details
                 $itemsData[] = [
                     'product_id' => $product->id,
                     'quantity'   => $item['qty'],
                     'price'      => $product->price,
-                    'subtotal'   => $subtotal, // Mengisi kolom subtotal
+                    'subtotal'   => $subtotal, // Mengisi kolom subtotal yang sebelumnya error
                 ];
             }
 
@@ -78,7 +79,7 @@ class TransactionController extends Controller
                 'change_amount' => $changeAmount,
             ]);
 
-            // Simpan detail item ke relasi 'details' (transaction_details)
+            // Simpan detail item ke relasi 'details' atau 'items'
             foreach ($itemsData as $data) {
                 if (method_exists($transaction, 'details')) {
                     $transaction->details()->create($data);
