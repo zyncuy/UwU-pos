@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Transaction;
-use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +12,10 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['user', 'items.product'])->latest()->paginate(10);
+        $transactions = Transaction::with(['user', 'details.product'])
+            ->latest()
+            ->paginate(10);
+
         return view('transactions.index', compact('transactions'));
     }
 
@@ -21,6 +23,7 @@ class TransactionController extends Controller
     {
         $categories = Category::all();
         $products = Product::where('stock', '>', 0)->get();
+
         return view('transactions.create', compact('categories', 'products'));
     }
 
@@ -49,13 +52,14 @@ class TransactionController extends Controller
                 $subtotal = $product->price * $item['qty'];
                 $totalPrice += $subtotal;
 
+                // Kurangi stok produk
                 $product->decrement('stock', $item['qty']);
 
                 $itemsData[] = [
                     'product_id' => $product->id,
-                    'quantity' => $item['qty'],
-                    'price' => $product->price,
-                    'subtotal' => $subtotal,
+                    'quantity'   => $item['qty'],
+                    'price'      => $product->price,
+                    'subtotal'   => $subtotal, // Mengisi kolom subtotal
                 ];
             }
 
@@ -67,15 +71,20 @@ class TransactionController extends Controller
             $invoiceNumber = 'TRX-' . time() . rand(100, 999);
 
             $transaction = Transaction::create([
-                'user_id' => auth()->id() ?? 1,
-                'invoice' => $invoiceNumber,
-                'total_price' => $totalPrice,
-                'pay_amount' => $request->pay_amount,
+                'user_id'       => auth()->id() ?? 1,
+                'invoice'       => $invoiceNumber,
+                'total_price'   => $totalPrice,
+                'pay_amount'    => $request->pay_amount,
                 'change_amount' => $changeAmount,
             ]);
 
+            // Simpan detail item ke relasi 'details' (transaction_details)
             foreach ($itemsData as $data) {
-                $transaction->items()->create($data);
+                if (method_exists($transaction, 'details')) {
+                    $transaction->details()->create($data);
+                } else {
+                    $transaction->items()->create($data);
+                }
             }
 
             DB::commit();
@@ -91,7 +100,7 @@ class TransactionController extends Controller
 
     public function show(Transaction $transaction)
     {
-        $transaction->load(['user', 'items.product']);
+        $transaction->load(['user', 'details.product']);
         return view('transactions.show', compact('transaction'));
     }
 }
