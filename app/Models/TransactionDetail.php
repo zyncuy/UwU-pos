@@ -9,6 +9,8 @@ class TransactionDetail extends Model
 {
     use HasFactory;
 
+    protected $table = 'transaction_details';
+
     protected $fillable = [
         'transaction_id',
         'product_id',
@@ -19,11 +21,11 @@ class TransactionDetail extends Model
 
     public function transaction()
     {
-        return $this->belongsTo(Transaction::class);
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }
