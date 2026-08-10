@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,18 +14,15 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with(['user', 'details.product'])
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->get();
+        $transactions = Transaction::latest()->get();
 
         return view('transactions.index', compact('transactions'));
     }
 
     public function create()
     {
-        $categories = Category::where('user_id', auth()->id())->get();
-        $products = Product::where('user_id', auth()->id())->get();
+        $categories = Category::all();
+        $products = Product::all();
 
         return view('transactions.create', compact('categories', 'products'));
     }
@@ -44,39 +42,25 @@ class TransactionController extends Controller
             $itemsData = [];
 
             foreach ($request->items as $item) {
-                $product = Product::where('id', $item['product_id'])
-                    ->where('user_id', auth()->id())
-                    ->lockForUpdate()
-                    ->first();
-
-                if (! $product) {
-                    throw new \Exception('Produk tidak ditemukan atau bukan milik Anda.');
-                }
-
-                $quantity = (int) $item['quantity'];
-
-                if ($product->stock < $quantity) {
-                    throw new \Exception("Stok \"{$product->name}\" tidak mencukupi (sisa {$product->stock}).");
-                }
-
-                $subtotal = $product->price * $quantity;
+                $product = Product::findOrFail($item['product_id']);
+                $subtotal = $product->price * $item['quantity'];
                 $totalPrice += $subtotal;
 
                 $itemsData[] = [
                     'product_id' => $product->id,
-                    'quantity' => $quantity,
+                    'quantity' => $item['quantity'],
                     'price' => $product->price,
                     'subtotal' => $subtotal,
                 ];
             }
 
             if ($request->pay_amount < $totalPrice) {
-                throw new \Exception('Jumlah pembayaran kurang dari total belanja.');
+                return back()->with('error', 'Jumlah pembayaran kurang!');
             }
 
             $transaction = Transaction::create([
-                'user_id' => auth()->id(),
-                'invoice' => 'TRX-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
+                'user_id' => auth()->id() ?? 1,
+                'invoice' => 'TRX-' . time(),
                 'total_price' => $totalPrice,
                 'pay_amount' => $request->pay_amount,
                 'change_amount' => $request->pay_amount - $totalPrice,
@@ -84,7 +68,11 @@ class TransactionController extends Controller
 
             foreach ($itemsData as $data) {
                 $transaction->details()->create($data);
-                Product::where('id', $data['product_id'])->decrement('stock', $data['quantity']);
+
+                $product = Product::find($data['product_id']);
+                if ($product) {
+                    $product->decrement('stock', $data['quantity']);
+                }
             }
 
             DB::commit();
@@ -93,33 +81,7 @@ class TransactionController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'Gagal memproses transaksi: '.$e->getMessage());
-        }
-    }
-
-    public function destroy(Transaction $transaction)
-    {
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        DB::beginTransaction();
-        try {
-            foreach ($transaction->details as $detail) {
-                $product = Product::find($detail->product_id);
-                if ($product) {
-                    $product->increment('stock', $detail->quantity);
-                }
-            }
-
-            $transaction->delete();
-            DB::commit();
-
-            return redirect()->route('transactions.index')->with('success', 'Transaksi berhasil dihapus!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return back()->with('error', 'Gagal menghapus transaksi: '.$e->getMessage());
+            return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
         }
     }
 }
