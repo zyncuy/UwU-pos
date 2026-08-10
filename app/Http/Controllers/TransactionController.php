@@ -66,7 +66,6 @@ class TransactionController extends Controller
             foreach ($itemsData as $data) {
                 $transaction->details()->create($data);
                 
-                // Kurangi stok produk
                 $product = Product::find($data['product_id']);
                 if ($product) {
                     $product->decrement('stock', $data['quantity']);

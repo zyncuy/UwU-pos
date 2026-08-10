@@ -4,27 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TransactionDetail extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $table = 'transaction_details';
 
-    /**
-     * Relasi balik ke Transaction
-     */
-    public function transaction(): BelongsTo
+    protected $fillable = [
+        'transaction_id',
+        'product_id',
+        'quantity',
+        'price',
+        'subtotal',
+    ];
+
+    public function transaction()
     {
-        return $this->belongsTo(Transaction::class);
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
-    /**
-     * Relasi ke Product
-     */
-    public function product(): BelongsTo
+    public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }
