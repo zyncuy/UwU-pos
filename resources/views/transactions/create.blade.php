@@ -12,6 +12,17 @@
                 </div>
             @endif
 
+            @if($errors->any())
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <p class="font-bold text-sm mb-1">Terjadi kesalahan input:</p>
+                    <ul class="list-disc pl-5 text-sm">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('transactions.store') }}" method="POST" id="transactionForm">
                 @csrf
                 
@@ -166,7 +177,7 @@
                     tr.innerHTML = `
                         <td class="px-4 py-3 font-medium text-gray-900">${item.name}
                             <input type="hidden" name="items[${index}][product_id]" value="${item.id}">
-                            <input type="hidden" name="items[${index}][qty]" value="${item.qty}">
+                            <input type="hidden" name="items[${index}][quantity]" value="${item.qty}">
                         </td>
                         <td class="px-4 py-3">Rp ${new Intl.NumberFormat('id-ID').format(item.price)}</td>
                         <td class="px-4 py-3 text-center">${item.qty}</td>

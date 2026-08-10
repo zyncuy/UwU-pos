@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('invoice_number')->nullable();
+            $table->string('invoice')->nullable();
             $table->integer('total_price');
-            $table->integer('paid_amount');
+            $table->integer('pay_amount');
             $table->integer('change_amount');
             $table->timestamps();
         });
