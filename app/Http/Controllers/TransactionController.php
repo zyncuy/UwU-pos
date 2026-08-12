@@ -14,7 +14,10 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::latest()->get();
+        // Hanya mengambil transaksi milik user/kasir yang sedang login
+        $transactions = Transaction::where('user_id', auth()->id())
+            ->latest()
+            ->get();
 
         return view('transactions.index', compact('transactions'));
     }
@@ -59,7 +62,7 @@ class TransactionController extends Controller
             }
 
             $transaction = Transaction::create([
-                'user_id' => auth()->id() ?? 1,
+                'user_id' => auth()->id(),
                 'invoice' => 'TRX-' . time(),
                 'total_price' => $totalPrice,
                 'pay_amount' => $request->pay_amount,
